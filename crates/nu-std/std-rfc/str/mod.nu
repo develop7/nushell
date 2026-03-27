@@ -180,3 +180,43 @@ export def align [
     }
     | str join (char nl)
 }
+
+alias "str lcp" = lcp
+
+# Given list of strings, find the longest common prefix and return the remaining parts of input.
+@example "No matching prefix" { [] | str lcp  } --result { prefix: "", rest: [] success: false }
+@example "List of 1" { ["abc"] | str lcp } --result { prefix: "abc", rest: [""] success: true }
+@example "Matching prefix" { [abc abd] | str lcp } --result { prefix: "ab", rest: [c d], success: true }
+@example "Non-matching prefix" { [qwe asd zxc] | str lcp } --result { prefix: "", rest: [qwe asd zxc], success: false }
+export def lcp []: list<string> -> record<prefix: string, rest: list<string>, success: bool> {
+    match ($in | length) {
+      0 => { prefix: "", rest: [], success: false }
+      1 => { prefix: ($in | get 0), rest: [""], success: true }
+      _ => {
+        let chars: list<list<string>> = $in | each { |value| $value | split chars --grapheme-clusters }
+        let shortest = $in
+            | enumerate
+            | sort-by { $in.item | str length }
+            | get 0
+
+        let shortest_chars = $chars | get $shortest.index
+        mut prefix_len = 0
+
+        for i in 0..<($shortest.item | str length) {
+          if ($chars | all { |row|
+              ($row | get $i) == ($shortest_chars | get $i)
+            }) {
+            $prefix_len = $prefix_len + 1
+          } else {
+            break
+          }
+        }
+
+        let split_at = $prefix_len
+        let prefix = $shortest_chars | first $split_at | str join
+        let rest = $chars | each { |value| $value | slice $split_at.. | str join }
+
+        { prefix: $prefix, rest: $rest, success: ($split_at > 0) }
+      }
+    }
+}
