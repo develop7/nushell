@@ -188,6 +188,14 @@ alias "str lcp" = lcp
 @example "List of 1" { [abc] | str lcp } --result {prefix: abc, rest: [""] success: true}
 @example "Matching prefix" { [abc abd] | str lcp } --result {prefix: ab, rest: [c d], success: true}
 @example "Non-matching prefix" { [qwe asd zxc] | str lcp } --result {prefix: "", rest: [qwe asd zxc], success: false}
+@example "Format package version differences" {
+  let pkg_current = "acme-3.4.5"
+  let pkg_updated = "acme-3.6.0"
+
+  let diff = [$pkg_current $pkg_updated] | str lcp
+
+  $"($diff.prefix)>>>($diff.rest.0) => ($diff.rest.1)<<<"
+} --result "acme-3.>>>4.5 => 6.0<<<"
 export def lcp []: list<string> -> record<prefix: string, rest: list<string>, success: bool> {
     match ($in | length) {
       0 => {prefix: "", rest: [], success: false}
